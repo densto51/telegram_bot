@@ -1,8 +1,8 @@
 """
-╔══════════════════════════════════════════════════════════════╗
-║      Telegram-бот «Личный финансовый ассистент»             ║
-║      Точка входа: запуск бота и фонового планировщика       ║
-╚══════════════════════════════════════════════════════════════╝
+
+      Telegram-бот «Личный финансовый ассистент»
+      Точка входа: запуск бота и фонового планировщика
+
 """
 
 import asyncio
@@ -46,11 +46,11 @@ logger = logging.getLogger(__name__)
 async def main() -> None:
     logger.info("🚀 Запуск бота «Личный финансовый ассистент»")
 
-    #База данных
+    # База данных
     await init_db()
     logger.info("✅ База данных инициализирована")
 
-    #Redis (FSM storage + кэш)
+    # Redis (FSM storage + кэш)
     redis = Redis(
         host=settings.REDIS_HOST,
         port=settings.REDIS_PORT,
@@ -61,7 +61,7 @@ async def main() -> None:
     storage = RedisStorage(redis=redis)
     logger.info("✅ Redis подключён")
 
-    # Bot & Dispatcher
+    #Bot & Dispatcher
     bot = Bot(
         token=settings.BOT_TOKEN,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
@@ -70,9 +70,10 @@ async def main() -> None:
 
     # Middleware
     dp.message.middleware(ThrottlingMiddleware(rate_limit=0.5))
-    dp.message.middleware(UserTrackerMiddleware())
+    dp.message.middleware(UserTrackerMiddleware(redis=redis))
+    dp.callback_query.middleware(UserTrackerMiddleware(redis=redis))
 
-    #Роутеры
+    # Роутеры
     dp.include_router(start.router)
     dp.include_router(voice.router)
     dp.include_router(expenses.router)
@@ -82,12 +83,12 @@ async def main() -> None:
     dp.include_router(reminders.router)
     dp.include_router(categories.router)
 
-    # Планировщик напоминаний
+    #  Планировщик напоминаний
     scheduler = await setup_scheduler(bot, redis)
     scheduler.start()
     logger.info("✅ Планировщик задач запущен")
 
-    # Запуск поллинга
+    #Запуск поллинга
     try:
         await bot.delete_webhook(drop_pending_updates=True)
         logger.info("🤖 Бот начал принимать обновления...")

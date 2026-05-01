@@ -1,25 +1,25 @@
-# ── Telegram Bot Framework ──────────────────────────────────────────────────
+# Telegram Bot Framework
 aiogram==3.13.1
 
-# ── Database ─────────────────────────────────────────────────────────────────
+# Database
 aiosqlite==0.20.0
 
-# ── Redis ─────────────────────────────────────────────────────────────────────
+#  Redis
 redis==5.2.1
 
-# ── Scheduler ────────────────────────────────────────────────────────────────
+# Scheduler
 APScheduler==3.10.4
 apscheduler[redis]
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# Config
 pydantic-settings==2.6.1
 
-# ── Timezone / date utils ─────────────────────────────────────────────────────
+# Timezone / date utils
 pytz==2024.2
 python-dateutil==2.9.0
 
-# ── Voice recognition (OpenAI Whisper) ───────────────────────────────────────
+#  Voice recognition (OpenAI Whisper)
 openai==1.54.4
 
-# ── Logging / misc ───────────────────────────────────────────────────────────
+# Logging / misc
 colorlog==6.9.0

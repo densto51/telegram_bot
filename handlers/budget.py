@@ -84,7 +84,7 @@ async def show_budget(event, state: FSMContext = None) -> None:
         await msg.answer(text, reply_markup=budget_list_kb(budgets))
 
 
-# ─── Добавление бюджета ───────────────────────────────────────────────────────
+#  Добавление бюджета
 
 @router.callback_query(F.data == "budget_add")
 async def cb_budget_add(callback: CallbackQuery, state: FSMContext) -> None:
@@ -127,9 +127,9 @@ async def step_budget_amount(message: Message, state: FSMContext) -> None:
     await state.clear()
 
 
-# ─── Удаление бюджета ────────────────────────────────────────────────────────
+# Удаление бюджета
 
-@router.callback_query(F.data.startswith("budget_del:"))
+@router.callback_query(F.data.startswith("budget_delete:"))
 async def cb_budget_delete(callback: CallbackQuery) -> None:
     budget_id = int(callback.data.split(":")[1])
     ok = await delete_budget(budget_id, callback.from_user.id)
@@ -140,7 +140,7 @@ async def cb_budget_delete(callback: CallbackQuery) -> None:
     await show_budget(callback)
 
 
-# ─── Глобальный лимит расходов ────────────────────────────────────────────────
+# Глобальный лимит расходов
 
 @router.callback_query(F.data == "set_global_limit")
 async def cb_set_global_limit(callback: CallbackQuery, state: FSMContext) -> None:

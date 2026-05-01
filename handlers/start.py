@@ -5,7 +5,8 @@ handlers/start.py — /start, /help, главное меню.
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery
-from aiogram.utils.markdown import hbold, hitalic
+from aiogram.utils.markdown import hbold
+from aiogram.exceptions import TelegramBadRequest
 
 from database.db import ensure_user
 from keyboards.main_menu import main_menu_kb, help_text
@@ -45,7 +46,33 @@ async def cmd_menu(message: Message) -> None:
     await message.answer("🏠 Главное меню:", reply_markup=main_menu_kb())
 
 
+async def _safe_edit_or_send(callback: CallbackQuery, text: str) -> None:
+    """
+    Пытается отредактировать сообщение.
+    Если не получается (фото, стикер, голосовое) — отправляет новое.
+    """
+    try:
+        await callback.message.edit_text(text, reply_markup=main_menu_kb())
+    except TelegramBadRequest:
+        # Сообщение — фото или медиа, нельзя редактировать текст
+        await callback.message.answer(text, reply_markup=main_menu_kb())
+
+
 @router.callback_query(F.data == "main_menu")
 async def cb_main_menu(callback: CallbackQuery) -> None:
-    await callback.message.edit_text("🏠 Главное меню:", reply_markup=main_menu_kb())
+    await _safe_edit_or_send(callback, "🏠 Главное меню:")
     await callback.answer()
+
+
+@router.callback_query(F.data == "help")
+async def cb_help(callback: CallbackQuery) -> None:
+    await _safe_edit_or_send(callback, help_text())
+    await callback.answer()
+
+
+@router.callback_query(F.data == "cancel_fsm")
+async def cb_cancel_global(callback: CallbackQuery) -> None:
+    """Глобальный обработчик отмены — на случай если локальный не поймал."""
+    await _safe_edit_or_send(callback, "🏠 Главное меню:")
+    await callback.answer()
+

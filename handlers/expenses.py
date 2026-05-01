@@ -1,12 +1,5 @@
 """
 handlers/expenses.py — запись расходов через FSM.
-
-Сценарий:
-  1. Пользователь нажимает «➖ Расход» ИЛИ пишет «кофе 150»
-  2. Если сумма не распознана — бот просит ввести
-  3. Выбор категории (inline-клавиатура)
-  4. Опциональная заметка
-  5. Сохранение в БД + проверка бюджета
 """
 
 import re
@@ -14,7 +7,7 @@ from aiogram import Router, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
 from database.queries import add_transaction, get_categories, get_budgets_with_spent
 from keyboards.categories import categories_kb
@@ -24,17 +17,35 @@ from utils.parser import parse_expense_text
 
 router = Router(name="expenses")
 
-# ─── Паттерн для быстрого ввода: «кофе 150» или «150 кофе» ─────────────────
-QUICK_PATTERN = re.compile(
-    r"^(?P<note>.+?)\s+(?P<amount>\d+[\.,]?\d*)\s*$"
-    r"|^(?P<amount2>\d+[\.,]?\d*)\s+(?P<note2>.+)$"
-)
-
 
 class ExpenseStates(StatesGroup):
-    waiting_amount = State()
+    waiting_amount   = State()
     waiting_category = State()
-    waiting_note = State()
+    waiting_note     = State()
+
+
+def cancel_kb() -> InlineKeyboardMarkup:
+    """Кнопка отмены — возврат в главное меню на любом шаге."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🏠 Отмена — вернуться в меню", callback_data="cancel_fsm")]
+    ])
+
+
+def note_kb() -> InlineKeyboardMarkup:
+    """Кнопки на шаге заметки."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⏭ Пропустить заметку", callback_data="skip_note")],
+        [InlineKeyboardButton(text="🏠 Отмена — вернуться в меню", callback_data="cancel_fsm")],
+    ])
+
+
+# ─── Отмена FSM из любого места ──────────────────────────────────────────────
+
+@router.callback_query(F.data == "cancel_fsm")
+async def cb_cancel(callback: CallbackQuery, state: FSMContext) -> None:
+    await state.clear()
+    await callback.message.edit_text("🏠 Главное меню:", reply_markup=main_menu_kb())
+    await callback.answer()
 
 
 # ─── Кнопка «Расход» из меню ─────────────────────────────────────────────────
@@ -44,30 +55,32 @@ async def cb_add_expense(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.message.edit_text(
         "💸 <b>Новый расход</b>\n\n"
         "Введи сумму и описание одним сообщением:\n"
-        "<i>Например: «кофе 150» или «150 обед в кафе»</i>\n\n"
-        "Или просто введи сумму цифрами:",
+        "<i>Например: «кофе 150» или «150 обед в кафе»</i>",
+        reply_markup=cancel_kb(),
     )
     await state.set_state(ExpenseStates.waiting_amount)
     await callback.answer()
 
 
-# ─── Быстрый ввод из любого контекста ────────────────────────────────────────
-
 @router.message(Command("expense"))
 async def cmd_expense(message: Message, state: FSMContext) -> None:
     await message.answer(
-        "💸 <b>Новый расход</b>\n\nВведи сумму:"
+        "💸 <b>Новый расход</b>\n\nВведи сумму:",
+        reply_markup=cancel_kb(),
     )
     await state.set_state(ExpenseStates.waiting_amount)
 
 
-# ─── Шаг 1: получение суммы/текста ───────────────────────────────────────────
+# ─── Шаг 1: сумма ────────────────────────────────────────────────────────────
 
 @router.message(ExpenseStates.waiting_amount)
 async def step_amount(message: Message, state: FSMContext) -> None:
     parsed = parse_expense_text(message.text or "")
     if not parsed:
-        await message.answer("❌ Не могу распознать сумму. Попробуй: <code>кофе 150</code>")
+        await message.answer(
+            "❌ Не могу распознать сумму. Попробуй: <code>кофе 150</code>",
+            reply_markup=cancel_kb(),
+        )
         return
 
     await state.update_data(amount=parsed["amount"], note=parsed.get("note"))
@@ -82,35 +95,37 @@ async def step_amount(message: Message, state: FSMContext) -> None:
     await state.set_state(ExpenseStates.waiting_category)
 
 
-# ─── Шаг 2: выбор категории ───────────────────────────────────────────────────
+# ─── Шаг 2: категория ────────────────────────────────────────────────────────
 
 @router.callback_query(ExpenseStates.waiting_category, F.data.startswith("exp_cat:"))
 async def step_category(callback: CallbackQuery, state: FSMContext) -> None:
-    cat_id = int(callback.data.split(":")[1])
-    await state.update_data(category_id=cat_id)
+    value = callback.data.split(":")[1]
+    if value == "skip":
+        await _save_expense(callback.message, state, callback.from_user.id)
+        await callback.answer()
+        return
 
+    await state.update_data(category_id=int(value))
     data = await state.get_data()
-    note = data.get("note")
 
-    if note:
-        # Заметка уже есть — сохраняем
+    if data.get("note"):
         await _save_expense(callback.message, state, callback.from_user.id)
     else:
         await callback.message.edit_text(
-            "📝 Добавить заметку? (необязательно)\n"
-            "Напиши что-нибудь или нажми /skip"
+            "📝 Добавить заметку? (необязательно)",
+            reply_markup=note_kb(),
         )
         await state.set_state(ExpenseStates.waiting_note)
     await callback.answer()
 
 
-@router.callback_query(ExpenseStates.waiting_category, F.data == "exp_cat:skip")
-async def step_category_skip(callback: CallbackQuery, state: FSMContext) -> None:
+# ─── Шаг 3: заметка ──────────────────────────────────────────────────────────
+
+@router.callback_query(ExpenseStates.waiting_note, F.data == "skip_note")
+async def cb_skip_note(callback: CallbackQuery, state: FSMContext) -> None:
     await _save_expense(callback.message, state, callback.from_user.id)
     await callback.answer()
 
-
-# ─── Шаг 3: заметка ──────────────────────────────────────────────────────────
 
 @router.message(ExpenseStates.waiting_note, Command("skip"))
 async def step_note_skip(message: Message, state: FSMContext) -> None:
@@ -123,16 +138,14 @@ async def step_note(message: Message, state: FSMContext) -> None:
     await _save_expense(message, state, message.from_user.id)
 
 
-# ─── Сохранение ───────────────────────────────────────────────────────────────
+# ─── Сохранение ──────────────────────────────────────────────────────────────
 
-async def _save_expense(
-    message: Message, state: FSMContext, user_id: int
-) -> None:
-    data = await state.get_data()
-    amount: float = data["amount"]
-    category_id: int | None = data.get("category_id")
-    note: str | None = data.get("note")
-    source: str = data.get("source", "text")
+async def _save_expense(message: Message, state: FSMContext, user_id: int) -> None:
+    data        = await state.get_data()
+    amount      = data["amount"]
+    category_id = data.get("category_id")
+    note        = data.get("note")
+    source      = data.get("source", "text")
 
     txn_id = await add_transaction(
         user_id=user_id,
@@ -143,7 +156,6 @@ async def _save_expense(
         source=source,
     )
 
-    # ── Проверка бюджета ─────────────────────────────────────────────
     budget_warn = ""
     if category_id:
         budgets = await get_budgets_with_spent(user_id)
@@ -173,7 +185,7 @@ async def _save_expense(
     await state.clear()
 
 
-# ─── Удаление последней транзакции ───────────────────────────────────────────
+# ─── Удаление транзакции ─────────────────────────────────────────────────────
 
 @router.callback_query(F.data.startswith("del_txn:"))
 async def cb_delete_txn(callback: CallbackQuery) -> None:

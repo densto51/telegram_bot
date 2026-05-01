@@ -14,9 +14,9 @@ from .db import get_db
 logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+
 # ТРАНЗАКЦИИ
-# ═══════════════════════════════════════════════════════════════════════════════
+
 
 async def add_transaction(
     user_id: int,
@@ -155,9 +155,9 @@ async def get_weekly_expenses(user_id: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+
 # КАТЕГОРИИ
-# ═══════════════════════════════════════════════════════════════════════════════
+
 
 async def get_categories(user_id: int, is_income: bool = False) -> list[dict]:
     async with get_db() as db:
@@ -195,9 +195,9 @@ async def delete_category(cat_id: int, user_id: int) -> bool:
         return cur.rowcount > 0
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+
 # БЮДЖЕТЫ
-# ═══════════════════════════════════════════════════════════════════════════════
+
 
 async def set_budget(user_id: int, category_id: int, amount: float, period: str = "month") -> None:
     async with get_db() as db:
@@ -267,9 +267,9 @@ async def get_user_settings(user_id: int) -> dict | None:
     return dict(row) if row else None
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+
 # НАПОМИНАНИЯ
-# ═══════════════════════════════════════════════════════════════════════════════
+
 
 async def add_reminder(
     user_id: int,

@@ -1,5 +1,5 @@
 """
-database/db.py — инициализация SQLite3.
+database/db.py - инициализация SQLite3.
 Правильное использование aiosqlite: через asynccontextmanager, новое соединение на каждый запрос.
 """
 
