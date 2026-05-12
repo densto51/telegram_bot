@@ -49,7 +49,7 @@ async def user_id() -> int:
     return uid
 
 
-# ─── Транзакции ─────────────────────────────────────────────────────────────
+# Транзакции
 
 @pytest.mark.asyncio
 async def test_add_and_get_transactions(user_id):
@@ -84,7 +84,7 @@ async def test_delete_transaction(user_id):
     assert ok2 is False
 
 
-# ─── Отчёты ─────────────────────────────────────────────────────────────────
+# Отчёты
 
 @pytest.mark.asyncio
 async def test_monthly_summary(user_id):
@@ -98,7 +98,7 @@ async def test_monthly_summary(user_id):
     assert summary["total_expenses"] >= 300.0
 
 
-# ─── Бюджеты ────────────────────────────────────────────────────────────────
+# Бюджеты
 
 @pytest.mark.asyncio
 async def test_set_and_get_budget(user_id):
@@ -111,7 +111,7 @@ async def test_set_and_get_budget(user_id):
     assert any(b["budget"] == 5000.0 for b in budgets)
 
 
-# ─── Напоминания ─────────────────────────────────────────────────────────────
+# Напоминания
 
 @pytest.mark.asyncio
 async def test_add_and_delete_reminder(user_id):

@@ -16,8 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 # ТРАНЗАКЦИИ
-
-
 async def add_transaction(
     user_id: int,
     amount: float,
@@ -157,8 +155,6 @@ async def get_weekly_expenses(user_id: int) -> list[dict]:
 
 
 # КАТЕГОРИИ
-
-
 async def get_categories(user_id: int, is_income: bool = False) -> list[dict]:
     async with get_db() as db:
         rows = await (
@@ -197,8 +193,6 @@ async def delete_category(cat_id: int, user_id: int) -> bool:
 
 
 # БЮДЖЕТЫ
-
-
 async def set_budget(user_id: int, category_id: int, amount: float, period: str = "month") -> None:
     async with get_db() as db:
         await db.execute(
@@ -269,8 +263,6 @@ async def get_user_settings(user_id: int) -> dict | None:
 
 
 # НАПОМИНАНИЯ
-
-
 async def add_reminder(
     user_id: int,
     title: str,
@@ -349,3 +341,29 @@ async def delete_reminder(reminder_id: int, user_id: int) -> bool:
         )
         await db.commit()
         return cur.rowcount > 0
+
+
+async def get_all_transactions_for_export(user_id: int) -> list[dict]:
+    """Получить все транзакции пользователя для экспорта."""
+    async with get_db() as db:
+        cursor = await db.execute(
+            """
+            SELECT
+                t.id,
+                t.amount,
+                t.is_income,
+                t.note,
+                t.source,
+                t.txn_date,
+                c.name AS category,
+                c.icon AS cat_icon
+            FROM transactions t
+            LEFT JOIN categories c ON t.category_id = c.id
+            WHERE t.user_id = ?
+            ORDER BY t.txn_date DESC, t.created_at DESC
+            """,
+            (user_id,)
+        )
+
+        rows = await cursor.fetchall()
+        return [dict(row) for row in rows]

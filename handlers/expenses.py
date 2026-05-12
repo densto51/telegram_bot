@@ -39,8 +39,7 @@ def note_kb() -> InlineKeyboardMarkup:
     ])
 
 
-# ─── Отмена FSM из любого места ──────────────────────────────────────────────
-
+# Отмена FSM из любого места
 @router.callback_query(F.data == "cancel_fsm")
 async def cb_cancel(callback: CallbackQuery, state: FSMContext) -> None:
     await state.clear()
@@ -48,14 +47,13 @@ async def cb_cancel(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
 
 
-# ─── Кнопка «Расход» из меню ─────────────────────────────────────────────────
-
+# Кнопка «Расход» из меню
 @router.callback_query(F.data == "add_expense")
 async def cb_add_expense(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.message.edit_text(
         "💸 <b>Новый расход</b>\n\n"
         "Введи сумму и описание одним сообщением:\n"
-        "<i>Например: «кофе 150» или «150 обед в кафе»</i>",
+        "<i>Например: «такси 150» или «150 обед в кафе»</i>",
         reply_markup=cancel_kb(),
     )
     await state.set_state(ExpenseStates.waiting_amount)
@@ -71,14 +69,13 @@ async def cmd_expense(message: Message, state: FSMContext) -> None:
     await state.set_state(ExpenseStates.waiting_amount)
 
 
-# ─── Шаг 1: сумма ────────────────────────────────────────────────────────────
-
+#Шаг 1: сумма
 @router.message(ExpenseStates.waiting_amount)
 async def step_amount(message: Message, state: FSMContext) -> None:
     parsed = parse_expense_text(message.text or "")
     if not parsed:
         await message.answer(
-            "❌ Не могу распознать сумму. Попробуй: <code>кофе 150</code>",
+            "❌ Не могу распознать сумму. Попробуй: <code>жвачки 150</code>",
             reply_markup=cancel_kb(),
         )
         return
@@ -95,8 +92,7 @@ async def step_amount(message: Message, state: FSMContext) -> None:
     await state.set_state(ExpenseStates.waiting_category)
 
 
-# ─── Шаг 2: категория ────────────────────────────────────────────────────────
-
+# Шаг 2: категория
 @router.callback_query(ExpenseStates.waiting_category, F.data.startswith("exp_cat:"))
 async def step_category(callback: CallbackQuery, state: FSMContext) -> None:
     value = callback.data.split(":")[1]
@@ -119,8 +115,7 @@ async def step_category(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
 
 
-# ─── Шаг 3: заметка ──────────────────────────────────────────────────────────
-
+#Шаг 3: заметка
 @router.callback_query(ExpenseStates.waiting_note, F.data == "skip_note")
 async def cb_skip_note(callback: CallbackQuery, state: FSMContext) -> None:
     await _save_expense(callback.message, state, callback.from_user.id)
@@ -138,14 +133,28 @@ async def step_note(message: Message, state: FSMContext) -> None:
     await _save_expense(message, state, message.from_user.id)
 
 
-# ─── Сохранение ──────────────────────────────────────────────────────────────
-
+# Сохранение
 async def _save_expense(message: Message, state: FSMContext, user_id: int) -> None:
     data        = await state.get_data()
     amount      = data["amount"]
     category_id = data.get("category_id")
     note        = data.get("note")
     source      = data.get("source", "text")
+
+    # Начисляем XP и проверяем достижения
+    from services.gamification import check_and_award
+    from handlers.gamification import notify_achievements
+    from database.queries import get_last_transactions
+
+    # Считаем общее число транзакций
+    all_txns = await get_last_transactions(user_id, limit=1000)
+    new_achievements = await check_and_award(
+        user_id=user_id,
+        event="expense_added",
+        value=len(all_txns),
+    )
+    if new_achievements:
+        await notify_achievements(message, new_achievements)
 
     txn_id = await add_transaction(
         user_id=user_id,
@@ -185,8 +194,7 @@ async def _save_expense(message: Message, state: FSMContext, user_id: int) -> No
     await state.clear()
 
 
-# ─── Удаление транзакции ─────────────────────────────────────────────────────
-
+#Удаление транзакции
 @router.callback_query(F.data.startswith("del_txn:"))
 async def cb_delete_txn(callback: CallbackQuery) -> None:
     from database.queries import delete_transaction

@@ -26,6 +26,11 @@ from handlers import (
     reminders,
     voice,
     categories,
+    export,
+    quick,
+    goals,
+    patterns,
+    gamification
 )
 from middlewares.throttling import ThrottlingMiddleware
 from middlewares.user_tracker import UserTrackerMiddleware
@@ -49,6 +54,10 @@ async def main() -> None:
     # База данных
     await init_db()
     logger.info("✅ База данных инициализирована")
+    from services.gamification import init_gamification_tables
+    await init_gamification_tables()
+    logger.info("✅ Таблицы геймификации инициализированы")
+
 
     # Redis (FSM storage + кэш)
     redis = Redis(
@@ -82,6 +91,11 @@ async def main() -> None:
     dp.include_router(reports.router)
     dp.include_router(reminders.router)
     dp.include_router(categories.router)
+    dp.include_router(export.router)
+    dp.include_router(quick.router)
+    dp.include_router(goals.router)
+    dp.include_router(patterns.router)
+    dp.include_router(gamification.router)
 
     #  Планировщик напоминаний
     scheduler = await setup_scheduler(bot, redis)

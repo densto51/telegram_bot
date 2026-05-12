@@ -31,7 +31,6 @@ class BudgetStates(StatesGroup):
 
 
 #Просмотр бюджетов
-
 @router.callback_query(F.data == "budget")
 @router.message(Command("budget"))
 async def show_budget(event, state: FSMContext = None) -> None:
@@ -85,7 +84,6 @@ async def show_budget(event, state: FSMContext = None) -> None:
 
 
 #  Добавление бюджета
-
 @router.callback_query(F.data == "budget_add")
 async def cb_budget_add(callback: CallbackQuery, state: FSMContext) -> None:
     categories = await get_categories(callback.from_user.id, is_income=False)
@@ -128,7 +126,6 @@ async def step_budget_amount(message: Message, state: FSMContext) -> None:
 
 
 # Удаление бюджета
-
 @router.callback_query(F.data.startswith("budget_delete:"))
 async def cb_budget_delete(callback: CallbackQuery) -> None:
     budget_id = int(callback.data.split(":")[1])
@@ -141,7 +138,6 @@ async def cb_budget_delete(callback: CallbackQuery) -> None:
 
 
 # Глобальный лимит расходов
-
 @router.callback_query(F.data == "set_global_limit")
 async def cb_set_global_limit(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.message.edit_text(

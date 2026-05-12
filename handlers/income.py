@@ -36,8 +36,7 @@ def note_kb() -> InlineKeyboardMarkup:
     ])
 
 
-# ─── Кнопка «Доход» из меню ──────────────────────────────────────────────────
-
+#Кнопка «Доход» из меню
 @router.callback_query(F.data == "add_income")
 async def cb_add_income(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.message.edit_text(
@@ -59,8 +58,7 @@ async def cmd_income(message: Message, state: FSMContext) -> None:
     await state.set_state(IncomeStates.waiting_amount)
 
 
-# ─── Шаг 1: сумма ────────────────────────────────────────────────────────────
-
+# Шаг 1: сумма
 @router.message(IncomeStates.waiting_amount)
 async def step_amount(message: Message, state: FSMContext) -> None:
     parsed = parse_expense_text(message.text or "")
@@ -79,8 +77,7 @@ async def step_amount(message: Message, state: FSMContext) -> None:
     await state.set_state(IncomeStates.waiting_category)
 
 
-# ─── Шаг 2: категория ────────────────────────────────────────────────────────
-
+# Шаг 2: категория
 @router.callback_query(IncomeStates.waiting_category, F.data.startswith("inc_cat:"))
 async def step_category(callback: CallbackQuery, state: FSMContext) -> None:
     value = callback.data.split(":")[1]
@@ -103,8 +100,7 @@ async def step_category(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
 
 
-# ─── Шаг 3: заметка ──────────────────────────────────────────────────────────
-
+# Шаг 3: заметка
 @router.callback_query(IncomeStates.waiting_note, F.data == "skip_income_note")
 async def cb_skip_note(callback: CallbackQuery, state: FSMContext) -> None:
     await _save_income(callback.message, state, callback.from_user.id)
@@ -122,8 +118,7 @@ async def step_note(message: Message, state: FSMContext) -> None:
     await _save_income(message, state, message.from_user.id)
 
 
-# ─── Сохранение ──────────────────────────────────────────────────────────────
-
+# Сохранение
 async def _save_income(message: Message, state: FSMContext, user_id: int) -> None:
     data = await state.get_data()
     txn_id = await add_transaction(
@@ -142,3 +137,17 @@ async def _save_income(message: Message, state: FSMContext, user_id: int) -> Non
         reply_markup=main_menu_kb(),
     )
     await state.clear()
+
+    # Начисляем XP за доход
+    from services.gamification import check_and_award
+    from handlers.gamification import notify_achievements
+    from database.queries import get_last_transactions
+
+    all_txns = await get_last_transactions(user_id, limit=1000)
+    new_achievements = await check_and_award(
+        user_id=user_id,
+        event="income_added",
+        value=len(all_txns),
+    )
+    if new_achievements:
+        await notify_achievements(message, new_achievements)
