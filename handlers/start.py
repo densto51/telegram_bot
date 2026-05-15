@@ -77,7 +77,7 @@ async def _safe_to_main(callback: CallbackQuery, text: str) -> None:
         await callback.message.answer(text, reply_markup=main_menu_kb())
 
 
-# ── /start ────────────────────────────────────────────────────────────────────
+# /start
 
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
@@ -103,7 +103,7 @@ async def cmd_menu(message: Message) -> None:
     await message.answer(text, reply_markup=main_menu_kb())
 
 
-# ── Главное меню (callback) ───────────────────────────────────────────────────
+#  Главное меню (callback)
 
 @router.callback_query(F.data == "main_menu")
 async def cb_main_menu(callback: CallbackQuery) -> None:

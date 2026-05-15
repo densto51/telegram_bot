@@ -46,7 +46,7 @@ REPEAT_ICONS = {
 }
 
 
-# ── Кнопки внутри FSM ────────────────────────────────────────────────────────
+# Кнопки внутри FSM
 
 def cancel_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -61,7 +61,7 @@ def skip_cancel_kb() -> InlineKeyboardMarkup:
     ])
 
 
-# ── FSM состояния ─────────────────────────────────────────────────────────────
+# FSM состояния
 
 class ReminderStates(StatesGroup):
     waiting_title    = State()
@@ -70,9 +70,9 @@ class ReminderStates(StatesGroup):
     waiting_repeat   = State()
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # СПИСОК НАПОМИНАНИЙ
-# ════════════════════════════════════════════════════════════════════════════
+
 
 @router.callback_query(F.data == "reminders")
 @router.message(Command("reminders"))
@@ -109,9 +109,8 @@ async def show_reminders(event, state=None) -> None:
         await msg.answer(text, reply_markup=reminders_list_kb(items))
 
 
-# ════════════════════════════════════════════════════════════════════════════
 # ПРОСМОТР ОДНОГО НАПОМИНАНИЯ
-# ════════════════════════════════════════════════════════════════════════════
+
 
 @router.callback_query(F.data.startswith("view_reminder:"))
 async def cb_view_reminder(callback: CallbackQuery) -> None:
@@ -141,9 +140,9 @@ async def cb_view_reminder(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # УДАЛЕНИЕ НАПОМИНАНИЯ
-# ════════════════════════════════════════════════════════════════════════════
+
 
 @router.callback_query(F.data.startswith("del_reminder:"))
 async def cb_delete_reminder(callback: CallbackQuery) -> None:
@@ -157,9 +156,9 @@ async def cb_delete_reminder(callback: CallbackQuery) -> None:
         await callback.answer("❌ Напоминание не найдено", show_alert=True)
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # СОЗДАНИЕ НАПОМИНАНИЯ — FSM
-# ════════════════════════════════════════════════════════════════════════════
+
 
 @router.callback_query(F.data == "add_reminder")
 async def cb_add_reminder(callback: CallbackQuery, state: FSMContext) -> None:
@@ -173,7 +172,7 @@ async def cb_add_reminder(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
 
 
-# ── Шаг 1: название ──────────────────────────────────────────────────────────
+# Шаг 1: название
 
 @router.message(ReminderStates.waiting_title)
 async def step_title(message: Message, state: FSMContext) -> None:
@@ -189,7 +188,7 @@ async def step_title(message: Message, state: FSMContext) -> None:
     await state.set_state(ReminderStates.waiting_amount)
 
 
-# ── Шаг 2: сумма ─────────────────────────────────────────────────────────────
+# Шаг 2: сумма
 
 @router.callback_query(ReminderStates.waiting_amount, F.data == "skip_reminder_amount")
 async def cb_skip_amount(callback: CallbackQuery, state: FSMContext) -> None:
@@ -230,7 +229,7 @@ async def _ask_datetime(message: Message, edit: bool = False) -> None:
         await message.answer(text, reply_markup=cancel_kb())
 
 
-# ── Шаг 3: дата/время ────────────────────────────────────────────────────────
+# Шаг 3: дата/время
 
 @router.message(ReminderStates.waiting_datetime)
 async def step_datetime(message: Message, state: FSMContext) -> None:
@@ -263,7 +262,7 @@ async def step_datetime(message: Message, state: FSMContext) -> None:
     await state.set_state(ReminderStates.waiting_repeat)
 
 
-# ── Шаг 4: повтор → сохранение ───────────────────────────────────────────────
+# Шаг 4: повтор → сохранение
 
 @router.callback_query(ReminderStates.waiting_repeat, F.data.startswith("repeat:"))
 async def step_repeat(callback: CallbackQuery, state: FSMContext) -> None:

@@ -24,7 +24,7 @@ router = Router(name="gamification")
 
 
 
-# ПРОФИЛЬ С УРОВНЕМ
+#ПРОФИЛЬ С УРОВНЕМ
 @router.message(Command("level"))
 @router.callback_query(F.data == "my_level")
 async def show_level(event) -> None:

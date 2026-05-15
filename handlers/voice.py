@@ -1,11 +1,8 @@
 """
-handlers/voice.py — обработка голосовых сообщений.
+handlers/voice.py — обработка голосовых сообщений через Groq Whisper API.
 
-Pipeline:
-  1. Получить voice → скачать OGG
-  2. Отправить в OpenAI Whisper → получить транскрипт
-  3. Распарсить сумму и заметку из текста
-  4. Передать управление в expenses/income FSM
+Groq предоставляет бесплатный API с моделью whisper-large-v3.
+Регистрация: https://console.groq.com
 """
 
 import os
@@ -27,67 +24,74 @@ logger = logging.getLogger(__name__)
 router = Router(name="voice")
 
 
-async def transcribe_voice(bot: Bot, voice: Voice) -> str | None:
-    """Скачивает голосовое и транскрибирует через Whisper API."""
-    if not settings.OPENAI_API_KEY:
+async def transcribe_with_groq(bot: Bot, voice: Voice) -> str | None:
+    """Транскрибирует голосовое через Groq Whisper API."""
+    groq_key = getattr(settings, "GROQ_API_KEY", "") or os.getenv("GROQ_API_KEY", "")
+    if not groq_key:
         return None
 
     try:
-        import openai
-        client = openai.AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        from groq import Groq
 
-        # Скачать файл во временную директорию
+        # Скачиваем OGG файл
         file_info = await bot.get_file(voice.file_id)
         with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
             tmp_path = tmp.name
-
         await bot.download_file(file_info.file_path, destination=tmp_path)
 
+        # Отправляем в Groq
+        client = Groq(api_key=groq_key)
         with open(tmp_path, "rb") as audio_file:
-            transcript = await client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
+            transcription = client.audio.transcriptions.create(
+                file=("voice.ogg", audio_file.read()),
+                model="whisper-large-v3",
                 language="ru",
+                response_format="text",
             )
         os.unlink(tmp_path)
-        return transcript.text
+        return transcription.strip() if transcription else None
 
     except Exception as e:
-        logger.error("Whisper transcription error: %s", e)
+        logger.error("Groq transcription error: %s", e)
         return None
 
 
 @router.message(F.voice)
 async def handle_voice(message: Message, state: FSMContext, bot: Bot) -> None:
-    processing_msg = await message.answer("🎙 Обрабатываю голосовое сообщение...")
+    groq_key = getattr(settings, "GROQ_API_KEY", "") or os.getenv("GROQ_API_KEY", "")
 
-    if not settings.OPENAI_API_KEY:
-        await processing_msg.edit_text(
-            "⚠️ <b>Голосовой ввод недоступен</b>\n\n"
-            "Для активации добавь <code>OPENAI_API_KEY</code> в .env\n\n"
+    if not groq_key:
+        await message.answer(
+            "🎙 Голосовой ввод недоступен.\n\n"
+            "Для активации:\n"
+            "1. Зарегистрируйся на <b>console.groq.com</b>\n"
+            "2. Получи бесплатный API ключ\n"
+            "3. Добавь в .env: <code>GROQ_API_KEY=gsk_...</code>\n\n"
             "Введи расход текстом: <code>кофе 150</code>"
         )
         return
 
-    text = await transcribe_voice(bot, message.voice)
+    processing_msg = await message.answer("🎙 Распознаю голосовое...")
+
+    text = await transcribe_with_groq(bot, message.voice)
 
     if not text:
         await processing_msg.edit_text(
-            "❌ Не удалось распознать речь. Попробуй ещё раз или введи текстом."
+            "❌ Не удалось распознать речь.\n"
+            "Попробуй говорить чётче или введи текстом."
         )
         return
 
-    await processing_msg.edit_text(f'🎙 Распознано: <i>«{text}»</i>')
+    await processing_msg.edit_text(f"🎙 Распознано: <i>«{text}»</i>")
 
     parsed = parse_expense_text(text)
     if not parsed:
         await message.answer(
             f"❓ Не нашёл сумму в: <i>«{text}»</i>\n\n"
-            "Попробуй формат: <code>потратил 500 на обед</code>"
+            "Попробуй: <code>потратил 500 на обед</code>"
         )
         return
 
-    # Сохраняем в FSM и запрашиваем категорию
     await state.update_data(
         amount=parsed["amount"],
         note=parsed.get("note") or text,

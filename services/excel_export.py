@@ -16,7 +16,7 @@ from openpyxl.styles import (
 from openpyxl.utils import get_column_letter
 
 
-# ── Цвета ─────────────────────────────────────────────────────────────────────
+# Цвета
 CLR_HEADER_BG  = "1F4E79"   # тёмно-синий — шапка
 CLR_HEADER_FG  = "FFFFFF"   # белый текст
 CLR_INCOME_BG  = "E2EFDA"   # светло-зелёный — доходы
@@ -25,7 +25,7 @@ CLR_TOTAL_BG   = "D9E1F2"   # голубой — итоги
 CLR_ALT_ROW    = "F2F2F2"   # серый — чётные строки
 CLR_ACCENT     = "2E75B6"   # синий — акцент
 
-# ── Стили ─────────────────────────────────────────────────────────────────────
+#  Стили
 FONT_MAIN   = "Arial"
 FONT_MONO   = "Courier New"
 
@@ -66,9 +66,9 @@ def _set_cell(ws, row, col, value, font=None, fill=None,
     return cell
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # ГЛАВНАЯ ФУНКЦИЯ
-# ════════════════════════════════════════════════════════════════════════════
+
 
 def generate_excel_report(
     transactions: list[dict],
@@ -104,9 +104,9 @@ def generate_excel_report(
     return buf.read()
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # ЛИСТ 1: ТРАНЗАКЦИИ
-# ════════════════════════════════════════════════════════════════════════════
+
 
 def _sheet_transactions(wb, transactions, currency, year, month):
     ws = wb.create_sheet("Транзакции")
@@ -197,9 +197,9 @@ def _sheet_transactions(wb, transactions, currency, year, month):
     ws.freeze_panes = "A5"
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # ЛИСТ 2: ПО КАТЕГОРИЯМ
-# ════════════════════════════════════════════════════════════════════════════
+
 
 def _sheet_by_category(wb, transactions, currency):
     ws = wb.create_sheet("По категориям")
@@ -260,9 +260,9 @@ def _sheet_by_category(wb, transactions, currency):
     ws.freeze_panes = "A4"
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # ЛИСТ 3: ИТОГИ ПО МЕСЯЦАМ
-# ════════════════════════════════════════════════════════════════════════════
+
 
 def _sheet_summary(wb, transactions, currency, year):
     ws = wb.create_sheet("Итоги по месяцам")
@@ -341,7 +341,7 @@ def _sheet_summary(wb, transactions, currency, year):
     ws.freeze_panes = "A4"
 
 
-# ── Вспомогательное ───────────────────────────────────────────────────────────
+# Вспомогательное
 
 def _month_name(month: int | None) -> str:
     names = ["","Январь","Февраль","Март","Апрель","Май","Июнь",

@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     # OpenAI (Whisper) — для голосового ввода
     OPENAI_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
 
     #  Настройки бота
     DEFAULT_CURRENCY: str = "KGS"   # Сом (Кыргызстан), меняйте по необходимости

@@ -47,7 +47,7 @@ async def _set_cached(redis: Redis, key: str, data) -> None:
         pass
 
 
-# ─── Меню отчётов ─────────────────────────────────────────────────────────────
+# Меню отчётов
 
 @router.callback_query(F.data == "reports")
 async def cb_reports(callback: CallbackQuery) -> None:
@@ -63,7 +63,7 @@ async def cmd_report(message: Message) -> None:
     await message.answer("📊 <b>Отчёты</b>:", reply_markup=reports_menu_kb())
 
 
-# ─── Месячный отчёт ──────────────────────────────────────────────────────────
+#  Месячный отчёт
 
 @router.callback_query(F.data.startswith("report_month:"))
 async def cb_monthly_report(callback: CallbackQuery, redis: Redis) -> None:
@@ -106,7 +106,7 @@ async def cb_monthly_report(callback: CallbackQuery, redis: Redis) -> None:
     await callback.answer()
 
 
-# ─── График за месяц (круговая + столбчатая) ─────────────────────────────────
+#  График за месяц (круговая + столбчатая)
 
 @router.callback_query(F.data.startswith("chart_month_pie:"))
 async def cb_chart_pie(callback: CallbackQuery, redis: Redis) -> None:
@@ -165,7 +165,7 @@ async def cb_chart_bar(callback: CallbackQuery, redis: Redis) -> None:
     )
 
 
-# ─── Годовой отчёт + линейный график ─────────────────────────────────────────
+# Годовой отчёт + линейный график
 
 @router.callback_query(F.data.startswith("report_year:"))
 async def cb_yearly_report(callback: CallbackQuery, redis: Redis) -> None:
@@ -234,7 +234,7 @@ async def cb_chart_year(callback: CallbackQuery, redis: Redis) -> None:
     )
 
 
-# ─── Топ категорий (горизонтальные бары) ──────────────────────────────────────
+# Топ категорий (горизонтальные бары)
 
 @router.callback_query(F.data.startswith("chart_hbar:"))
 async def cb_chart_hbar(callback: CallbackQuery, redis: Redis) -> None:
@@ -266,7 +266,7 @@ async def cb_chart_hbar(callback: CallbackQuery, redis: Redis) -> None:
     )
 
 
-# ─── Последние операции ───────────────────────────────────────────────────────
+# Последние операции
 
 @router.callback_query(F.data == "report_last")
 async def cb_last_txns(callback: CallbackQuery) -> None:
@@ -304,7 +304,7 @@ async def cmd_delete_txn(message: Message) -> None:
     )
 
 
-# ─── Недельный отчёт ─────────────────────────────────────────────────────────
+#Недельный отчёт
 
 @router.callback_query(F.data == "report_week")
 async def cb_weekly_report(callback: CallbackQuery) -> None:

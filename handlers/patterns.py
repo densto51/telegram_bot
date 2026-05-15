@@ -32,7 +32,6 @@ TZ = pytz.timezone(settings.DEFAULT_TIMEZONE)
 
 
 # HELPERS
-# ════════════════════════════════════════════════════════════════════════════
 
 def _pattern_suggest_kb(pattern_key: str, idx: int, total: int) -> InlineKeyboardMarkup:
     """Клавиатура для одного предложения паттерна."""
@@ -63,9 +62,9 @@ def _next_month_date() -> str:
     return next_month.replace(hour=9, minute=0, second=0, microsecond=0).isoformat()
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # ПОКАЗ ПАТТЕРНОВ
-# ════════════════════════════════════════════════════════════════════════════
+
 
 async def _show_pattern(
     message: Message,
@@ -131,9 +130,9 @@ async def show_patterns(event) -> None:
     # (передаём через callback_data индексы)
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # ДОБАВИТЬ НАПОМИНАНИЕ ПО ПАТТЕРНУ
-# ════════════════════════════════════════════════════════════════════════════
+
 
 @router.callback_query(F.data.startswith("pat_add:"))
 async def cb_pattern_add(callback: CallbackQuery) -> None:
@@ -184,9 +183,9 @@ async def cb_pattern_add(callback: CallbackQuery) -> None:
     await callback.answer("✅ Напоминание создано!")
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # ПРОПУСТИТЬ / ЗАКРЫТЬ
-# ════════════════════════════════════════════════════════════════════════════
+
 
 @router.callback_query(F.data.startswith("pat_skip:"))
 async def cb_pattern_skip(callback: CallbackQuery) -> None:
@@ -227,9 +226,9 @@ async def cb_pattern_close(callback: CallbackQuery) -> None:
     await callback.answer()
 
 
-# ════════════════════════════════════════════════════════════════════════════
+
 # АВТОМАТИЧЕСКАЯ ПРОВЕРКА ПОСЛЕ ЗАПИСИ РАСХОДА
-# ════════════════════════════════════════════════════════════════════════════
+
 
 async def check_patterns_after_expense(user_id: int, message: Message) -> None:
     """

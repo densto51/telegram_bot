@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from database.db import get_db
 
 
-# ── Уровни ───────────────────────────────────────────────────────────────────
+# Уровни
 
 LEVELS = [
     (0,     1,  "🌱 Новичок"),
@@ -67,7 +67,7 @@ def get_level_info(xp: int) -> dict:
     }
 
 
-# ── Достижения ────────────────────────────────────────────────────────────────
+# Достижения
 
 ACHIEVEMENTS = {
     "first_expense": {
@@ -169,7 +169,7 @@ ACHIEVEMENTS = {
 }
 
 
-# ── БД для геймификации ───────────────────────────────────────────────────────
+# БД для геймификации
 
 async def init_gamification_tables() -> None:
     async with get_db() as db:
