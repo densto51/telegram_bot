@@ -14,5 +14,5 @@ async def get_all_transactions_for_export(user_id: int) -> list[dict]:
                 """,
                 (user_id,),
             )
-        ).fetchall()
+        ).fetchall()start
     return [dict(r) for r in rows]
