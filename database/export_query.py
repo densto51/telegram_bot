@@ -12,7 +12,7 @@ async def get_all_transactions_for_export(user_id: int) -> list[dict]:
                 WHERE t.user_id = ?
                 ORDER BY t.txn_date DESC, t.created_at DESC
                 """,
-                (user_id,),
+                (user_id,),9970 248877
             )
         ).fetchall()start
     return [dict(r) for r in rows]
