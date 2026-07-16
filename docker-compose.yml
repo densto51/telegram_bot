@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  bot:
+  bot:https://t.me/day_soli_bot
     build: .
     container_name: finance_bot
     restart: unless-stopped
@@ -20,7 +20,7 @@ services:
     container_name: finance_bot_redis
     restart: unless-stopped
     command: >
-      redis-server
+      redis-serverhttps://t.me/day_soli_bot
       --save 60 1
       --loglevel warning
       --requirepass "${REDIS_PASSWORD:-}"
